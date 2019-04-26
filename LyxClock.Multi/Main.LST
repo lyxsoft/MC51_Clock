@@ -1,0 +1,987 @@
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 1   
+
+
+C51 COMPILER V7.10, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN \\tsclient\S\MC51\Output\Main.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE Main.c OBJECT(\\tsclient\S\MC51\Output\Main.obj)
+
+line level    source
+
+   1          /*
+   2                  (*)     Clock
+   3          
+   4                          LyxSoft 13.10.2015
+   5          
+   6          */
+   7          
+   8          #include "STC\STC15F104E.H"
+   9          #include "DS1302.h"
+  10          #include "NTC.h"
+  11          
+  12          /*                                      0    1    2        3    4        5        6        7    8        9    a    b    c    d    e    f*/
+  13          
+  14          unsigned char code tblNumbers[]    ={0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0x88,0x83,0xC6,0xA1
+             -,0x86,0x8E};
+  15          unsigned char code tblNumbersRev[] ={0xC0,0xCF,0xA4,0x86,0x8B,0x92,0x90,0xC7,0x80,0x82,0x81,0x98,0xF0,0x8C
+             -,0xB0,0xB1};
+  16          
+  17          /*                                      0    1    2        3    4        5        6        7    8        9    a    b    c    d    e    f  
+             - 10   11   12*/
+  18          unsigned char code tblMonthDays[] = {0x00,0x31,0x28,0x31,0x30,0x31,0x30,0x31,0x31,0x30,0x00,0x00,0x00,0x00
+             -,0x00,0x00,0x31,0x30,0x31};
+  19          
+  20          #define MAKEBCD(nValue) ((((nValue) / 10) << 4) + ((nValue) % 10))
+  21          #define GETBCD(nBCD)    ((((nBCD) >> 4) * 10) + ((nBCD) & 0xF))
+  22          
+  23          #define KEY_S1  P31
+  24          #define KEY_S2  P30
+  25          #define KEY_OK  P30
+  26          #define KEY_SYNC P30
+  27          
+  28          #define BEEP    P33
+  29          
+  30          #define MODE_CLOCK              0
+  31          #define MODE_HOUR               1
+  32          #define MODE_MINUTE             2
+  33          #define MODE_HOUR24             3
+  34          #define MODE_MONTH              4
+  35          #define MODE_DAY                5
+  36          #define MODE_WEEK               6
+  37          #define MODE_YEAR               7
+  38          #define MODE_BEEP               8
+  39          #define MODE_MASTER             9
+  40          #define MODE_MAX                9
+  41          
+  42          #define SMODE_CLOCK                             0
+  43          #define SMODE_TEMP                              1
+  44          #define SMODE_DATE                              2
+  45          #define SMODE_WEEK                              3
+  46          #define SMODE_YEAR                              4
+  47          #define SMODE_SECOND                    5
+  48          #define SMODE_MS                                6
+  49          #define SMODE_COUNTDOWN1                7
+  50          #define SMODE_COUNTDOWN2                8
+  51          
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 2   
+
+  52          #define SMODE_MAX                               8
+  53          
+  54          #define SMODE_COUNTSEC                  10      //10 seconds return to SMODE_CLOCK
+  55          
+  56          bit bBlockClock;
+  57          
+  58          // Clock
+  59          static DS1302Time nCurrentTime; 
+  60          static unsigned char n100Ms, n10Ms, nMs, nLastSec;
+  61          bit bBeep, bMaster;
+  62          
+  63          // Temperature
+  64          static unsigned char nTemp, nTempL;
+  65          
+  66          // Buttons
+  67          static bit bPressedS1, bPressedS2, bSync;
+  68          static unsigned char nMode, nSubMode, nSubModeTime, nCountDownSec, nCountDownMin, nCountDownBeep;
+  69          
+  70          // Display
+  71          static unsigned char nLED, nData0, nData1, nData2, nData3;
+  72          static bit bDot, bSound, bShow0, bShow1, bShow2, bShow3;
+  73          
+  74          void PreDisplay (void)
+  75          {
+  76   1              unsigned char nDisplay;
+  77   1      
+  78   1              switch (nMode)
+  79   1              {
+  80   2              case MODE_CLOCK:
+  81   2                      bShow0 = 1;
+  82   2                      bShow1 = 1;
+  83   2                      bShow2 = 1;
+  84   2                      bShow3 = 1;
+  85   2                      nDisplay = nSubMode;
+  86   2                      break;
+  87   2      
+  88   2              case MODE_HOUR:
+  89   2                      bShow0 = 1;
+  90   2                      bShow1 = 1;
+  91   2                      bShow2 = bPressedS1 || bDot;
+  92   2                      bShow3 = bShow2;
+  93   2      
+  94   2                      nDisplay = SMODE_CLOCK;
+  95   2                      break;
+  96   2              case MODE_MINUTE:
+  97   2                      bShow0 = bPressedS1 || bDot;
+  98   2                      bShow1 = bShow0;
+  99   2                      bShow2 = 1;
+ 100   2                      bShow3 = 1;
+ 101   2      
+ 102   2                      nDisplay = SMODE_CLOCK;
+ 103   2                      break;
+ 104   2              case MODE_MONTH:
+ 105   2                      bShow0 = 1;
+ 106   2                      bShow1 = 1;
+ 107   2                      bShow2 = bPressedS1 || bDot;
+ 108   2                      bShow3 = bShow2;
+ 109   2      
+ 110   2                      nDisplay = SMODE_DATE;
+ 111   2                      break;
+ 112   2              case MODE_DAY:
+ 113   2                      bShow0 = bPressedS1 || bDot;
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 3   
+
+ 114   2                      bShow1 = bShow0;
+ 115   2                      bShow2 = 1;
+ 116   2                      bShow3 = 1;
+ 117   2      
+ 118   2                      nDisplay = SMODE_DATE;
+ 119   2                      break;
+ 120   2              case MODE_WEEK:
+ 121   2                      bShow0 = bPressedS1 || bDot;
+ 122   2                      bShow1 = bShow0;
+ 123   2                      bShow2 = bShow0;
+ 124   2                      bShow3 = bShow0;
+ 125   2      
+ 126   2                      nDisplay = SMODE_WEEK;
+ 127   2                      break;
+ 128   2              case MODE_YEAR:
+ 129   2                      bShow0 = bPressedS1 || bDot;
+ 130   2                      bShow1 = bShow0;
+ 131   2                      bShow2 = bShow0;
+ 132   2                      bShow3 = bShow0;
+ 133   2      
+ 134   2                      nDisplay = SMODE_YEAR;
+ 135   2                      break;
+ 136   2              case MODE_HOUR24:
+ 137   2                      bShow0 = bDot;
+ 138   2                      bShow1 = bDot;
+ 139   2                      bShow2 = bDot;
+ 140   2                      bShow3 = 0;
+ 141   2                      
+ 142   2                      if (nCurrentTime.Hour & 0x80)   // 12 HOUR
+ 143   2                      {
+ 144   3                              nData1 = tblNumbersRev [2];
+ 145   3                              nData2 = tblNumbers    [1];
+ 146   3                      }
+ 147   2                      else
+ 148   2                      {
+ 149   3                              nData1 = tblNumbersRev [4];
+ 150   3                              nData2 = tblNumbers    [2];
+ 151   3                      }
+ 152   2                      nData0 = 0x89;  //'H'
+ 153   2                      nData3 = 0xFF;  //Hide
+ 154   2                      return;
+ 155   2              case MODE_BEEP:
+ 156   2                      bShow0 = bDot;
+ 157   2                      bShow1 = bDot;
+ 158   2                      bShow2 = bDot;
+ 159   2                      bShow3 = bDot;
+ 160   2                      
+ 161   2                      if (bBeep)
+ 162   2                      {
+ 163   3                              nData0 = 0x8C; //'P'
+ 164   3                              nData1 = 0xB0; //'E'
+ 165   3                              nData2 = 0x86; //'E'
+ 166   3                              nData3 = 0x83; //'b'
+ 167   3                      }
+ 168   2                      else
+ 169   2                      {
+ 170   3                              nData0 = 0xBF; //'-'
+ 171   3                              nData1 = 0xBF;
+ 172   3                              nData2 = 0xBF;
+ 173   3                              nData3 = 0xBF;
+ 174   3                      }
+ 175   2                      return;
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 4   
+
+ 176   2              case MODE_MASTER:
+ 177   2                      bShow0 = bDot;
+ 178   2                      bShow1 = bDot;
+ 179   2                      bShow3 = 0;
+ 180   2                      
+ 181   2                      if (bMaster)
+ 182   2                      {
+ 183   3                              bShow2 = bDot;
+ 184   3                              nData0 = 0x87; //'t'
+ 185   3                              nData1 = 0xC8; //'U'
+ 186   3                              nData2 = 0xC0; //'O'
+ 187   3                              nData3 = 0xFF;
+ 188   3                      }
+ 189   2                      else
+ 190   2                      {
+ 191   3                              bShow2 = 0;
+ 192   3                              nData0 = 0xC8; //'N'
+ 193   3                              nData1 = 0xCF; //'1'
+ 194   3                              nData2 = 0xFF;
+ 195   3                              nData3 = 0xFF;
+ 196   3                      }
+ 197   2      
+ 198   2                      return;
+ 199   2              default:
+ 200   2                      bShow0 = bDot;
+ 201   2                      bShow1 = bDot;
+ 202   2                      bShow2 = bDot;
+ 203   2                      bShow3 = bDot;
+ 204   2      
+ 205   2                      nDisplay = 0xFF;  //NA
+ 206   2                      break;          
+ 207   2              }
+ 208   1      
+ 209   1              switch (nDisplay)
+ 210   1              {
+ 211   2              case SMODE_CLOCK:
+ 212   2                      nData1 = nCurrentTime.Minute;
+ 213   2                      nData2 = nCurrentTime.Hour;
+ 214   2      
+ 215   2                      nData0 = tblNumbers   [nData1 & 0x0F];
+ 216   2                      nData1 = tblNumbersRev[nData1 >> 4] & (bDot ? 0x7F : 0xFF);
+ 217   2      
+ 218   2                      if ((nData2 & 0xA0) == 0xA0)    //12 Hour Mode and PM
+ 219   2                              nData0 &= 0x7F;
+ 220   2                      if (nData2 & 0x80) //12 Hour mode
+ 221   2                      {
+ 222   3                              nData2 &= 0x1F;
+ 223   3                              bShow3 &= nData2 >= 0x10;
+ 224   3                      }
+ 225   2                      nData3 = tblNumbers [nData2 >> 4];
+ 226   2                      nData2 = tblNumbers   [nData2 & 0x0F] & (bDot ? 0x7F : 0xFF);
+ 227   2                      break;
+ 228   2              case SMODE_TEMP:
+ 229   2                      nData0 = 0x9C;  //'Deg
+ 230   2                      nData1 = nTempL;
+ 231   2                      nData2 = nTemp;
+ 232   2      
+ 233   2                      if (nData2 >= 40 && nData1 < 10)        //Higher than 0
+ 234   2                      {
+ 235   3                              nData2 -= 40;
+ 236   3                              bShow3 &= nData2 >= 0x10;
+ 237   3      
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 5   
+
+ 238   3                              nData1 = tblNumbersRev[nData1];
+ 239   3                              nData3 = tblNumbers   [nData2 / 10];
+ 240   3                              nData2 = tblNumbers   [nData2 % 10] & 0x7F;
+ 241   3      
+ 242   3                      }
+ 243   2                      else if (nData2 < 40)
+ 244   2                      {
+ 245   3                              nData2 = 40 - nData2;
+ 246   3                              nData3 = 0xBF; // '-'
+ 247   3                              nData1 = tblNumbers   [nData2 % 10];
+ 248   3                              nData2 = tblNumbers   [nData2 / 10];
+ 249   3                      }
+ 250   2                      else
+ 251   2                      {
+ 252   3                              nData0 = tblNumbers   [8] & 0x7F;
+ 253   3                              nData1 = nData0;
+ 254   3                              nData2 = nData0;
+ 255   3                              nData3 = nData0;
+ 256   3                      }
+ 257   2                      break;
+ 258   2      
+ 259   2              case SMODE_DATE:
+ 260   2                      nData1 = nCurrentTime.Day;
+ 261   2                      nData2 = nCurrentTime.Month;
+ 262   2                      bShow3 &= nData2 >= 0x10;
+ 263   2      
+ 264   2                      nData0 = tblNumbers   [nData1 & 0x0F];
+ 265   2                      nData1 = tblNumbersRev[nData1 >> 4] & 0x7F;
+ 266   2                      nData3 = tblNumbers   [nData2 >> 4];
+ 267   2                      nData2 = tblNumbers   [nData2 & 0x0F];
+ 268   2                      break;
+ 269   2      
+ 270   2              case SMODE_WEEK:
+ 271   2                      switch (nCurrentTime.Week)
+ 272   2                      {
+ 273   3                      case 1:
+ 274   3                              nData0 = 0xAB;  //n
+ 275   3                              nData1 = 0x9c;  //o
+ 276   3                              nData2 = 0xC8;  //N
+ 277   3                              nData3 = 0xF9;  //|N = M
+ 278   3                              break;
+ 279   3                      case 2:
+ 280   3                              nData0 = 0x86;  //E
+ 281   3                              nData1 = 0xC8;  //U
+ 282   3                              nData2 = 0xCE;  //T
+ 283   3                              nData3 = 0xFE;  //T
+ 284   3                              break;
+ 285   3                      case 3:
+ 286   3                              nData0 = 0xA1;  //d
+ 287   3                              nData1 = 0xB0;  //E
+ 288   3                              nData2 = 0xC1;  //U
+ 289   3                              nData3 = 0xF9;  //|U=W
+ 290   3                              break;
+ 291   3                      case 4:
+ 292   3                              nData0 = 0xE3;  //u
+ 293   3                              nData1 = 0x99;  //h
+ 294   3                              nData2 = 0xCE;  //T
+ 295   3                              nData3 = 0xFE;  //T
+ 296   3                              break;
+ 297   3                      case 5:
+ 298   3                              nData0 = 0xFB;  //i
+ 299   3                              nData1 = 0xBD;  //r
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 6   
+
+ 300   3                              nData2 = 0x8E;  //F
+ 301   3                              nData3 = 0xFF;  // 
+ 302   3                              break;
+ 303   3                      case 6:
+ 304   3                              nData0 = 0x87;  //t
+ 305   3                              nData1 = 0x81;  //A
+ 306   3                              nData2 = 0x92;  //S
+ 307   3                              nData3 = 0xFF;  // 
+ 308   3                              break;
+ 309   3                      case 7:
+ 310   3                              nData0 = 0xAB;  //n
+ 311   3                              nData1 = 0xDC;  //u
+ 312   3                              nData2 = 0x92;  //S
+ 313   3                              nData3 = 0xFF;  // 
+ 314   3                              break;
+ 315   3                      default:
+ 316   3                              nData0 = tblNumbers   [8] & 0x7F;
+ 317   3                              nData1 = nData0;
+ 318   3                              nData2 = nData0;
+ 319   3                              nData3 = nData0;
+ 320   3                              break;
+ 321   3                      }
+ 322   2                      break;
+ 323   2              case SMODE_YEAR:
+ 324   2                      nData1 = nCurrentTime.Year;
+ 325   2                      nData0 = tblNumbers   [nData1 & 0x0F];
+ 326   2                      nData1 = tblNumbersRev[nData1 >> 4];
+ 327   2                      nData2 = tblNumbers   [0];
+ 328   2                      nData3 = tblNumbers   [2];
+ 329   2                      break;
+ 330   2              case SMODE_SECOND:
+ 331   2                      nData1 = nCurrentTime.Second;
+ 332   2                      nData2 = nCurrentTime.Minute;
+ 333   2      
+ 334   2      
+ 335   2                      nData0 = tblNumbers   [nData1 & 0x0F];
+ 336   2                      nData1 = tblNumbersRev[nData1 >> 4] & (bDot ? 0x7F : 0xFF);
+ 337   2                      nData3 = tblNumbers   [nData2 >> 4];
+ 338   2                      nData2 = tblNumbers   [nData2 & 0x0F] & (bDot ? 0x7F : 0xFF);
+ 339   2                      break;
+ 340   2              case SMODE_MS:
+ 341   2                      nData0 = tblNumbers[0];
+ 342   2                      nData1 = tblNumbersRev[n100Ms];
+ 343   2      
+ 344   2                      nData2 = nCurrentTime.Second;
+ 345   2      
+ 346   2                      nData3 = tblNumbers   [nData2 >> 4];
+ 347   2                      nData2 = tblNumbers   [nData2 & 0x0F] & 0x7F;
+ 348   2                      break;
+ 349   2              case SMODE_COUNTDOWN1:
+ 350   2                      nData0 = tblNumbers   [nCountDownSec % 10];
+ 351   2                      nData1 = tblNumbersRev[nCountDownSec / 10] & 0x7F;
+ 352   2                      nData2 = tblNumbers   [nCountDownMin % 10] & 0x7F;
+ 353   2                      nData3 = tblNumbers   [nCountDownMin / 10];
+ 354   2      
+ 355   2                      bShow3 = nCountDownMin >= 10;
+ 356   2                      break;
+ 357   2              case SMODE_COUNTDOWN2:
+ 358   2      
+ 359   2                      nData0 = tblNumbers   [nCountDownSec % 10];
+ 360   2                      nData1 = tblNumbersRev[nCountDownSec / 10] & ((nCountDownBeep == 0 || bDot) ? 0x7F : 0xFF);
+ 361   2                      nData2 = tblNumbers   [nCountDownMin % 10] & ((nCountDownBeep == 0 || bDot) ? 0x7F : 0xFF);
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 7   
+
+ 362   2                      nData3 = tblNumbers   [nCountDownMin / 10];
+ 363   2      
+ 364   2                      bShow3 = nCountDownMin >= 10;
+ 365   2                      break;
+ 366   2              default:
+ 367   2                      nData0 = tblNumbers   [8] & 0x7F;
+ 368   2                      nData1 = nData0;
+ 369   2                      nData2 = nData0;
+ 370   2                      nData3 = nData0;
+ 371   2                      break;
+ 372   2              }
+ 373   1      }
+ 374          
+ 375          void OnTimer () interrupt 1
+ 376          {
+ 377   1              
+ 378   1              // Timer reset
+ 379   1              TL0 = 0xCD;
+ 380   1              TH0 = 0xD4;                     // 1ms
+ 381   1      
+ 382   1              nLastSec = nCurrentTime.Second;
+ 383   1      
+ 384   1              // Clock
+ 385   1              nMs ++;
+ 386   1              if (nMs >= 10)
+ 387   1              {
+ 388   2                      nMs = 0;
+ 389   2                      n10Ms ++;
+ 390   2      
+ 391   2                      if (n10Ms >= 10)
+ 392   2                      {
+ 393   3                              n10Ms = 0;
+ 394   3                              n100Ms ++;
+ 395   3                              if (n100Ms == 5)
+ 396   3                              {
+ 397   4                                      bDot = 1;
+ 398   4                              }
+ 399   3                              else if (n100Ms >= 10)
+ 400   3                              {
+ 401   4                                      bDot = 0;
+ 402   4                                      n100Ms = 0;
+ 403   4                              }
+ 404   3      
+ 405   3                              // Close Tick Sound
+ 406   3                              if (bSound)
+ 407   3                              {
+ 408   4                                      if (bBeep && BEEP)
+ 409   4                                              BEEP = 0;
+ 410   4                                      else
+ 411   4                                      {
+ 412   5                                              BEEP = 1;
+ 413   5                                              bSound = 0;
+ 414   5                                      }
+ 415   4                              }
+ 416   3                      }
+ 417   2                      if (bSync && n10Ms > 1)
+ 418   2                      {
+ 419   3                              bSync = 0; //End Sync
+ 420   3                              KEY_SYNC = 1;
+ 421   3                      }
+ 422   2      
+ 423   2                      // Read DS1302
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 8   
+
+ 424   2                      if (!bBlockClock)
+ 425   2                              if (!DS1302ReadTime (&nCurrentTime))    //Read Time
+ 426   2                                      return;
+ 427   2              }
+ 428   1      
+ 429   1              if (nCurrentTime.Second != nLastSec)
+ 430   1              {
+ 431   2                      n100Ms = 0;
+ 432   2                      n10Ms = 0;
+ 433   2                      nMs = 0;
+ 434   2                      bDot = 0;
+ 435   2      
+ 436   2                      if (nMode == MODE_CLOCK)
+ 437   2                      {
+ 438   3                              switch (nSubMode)
+ 439   3                              {
+ 440   4                              case SMODE_COUNTDOWN2:
+ 441   4                                      if (!nCountDownSec)
+ 442   4                                      {
+ 443   5                                              if (nCountDownMin)
+ 444   5                                              {
+ 445   6                                                      nCountDownMin --;
+ 446   6                                                      nCountDownSec = 59;
+ 447   6                                              }
+ 448   5                                              else if (nCountDownBeep)
+ 449   5                                              {
+ 450   6                                                      bSound = 1;
+ 451   6                                                      nCountDownBeep --;
+ 452   6                                              }
+ 453   5                                      }
+ 454   4                                      else
+ 455   4                                              nCountDownSec --;
+ 456   4                                      break;
+ 457   4                              case SMODE_TEMP:
+ 458   4                                      if (nSubModeTime)
+ 459   4                                      {
+ 460   5                                              nTemp = ReadTemperature (&nTempL);
+ 461   5                                              nSubModeTime --;
+ 462   5                                      }
+ 463   4                                      else
+ 464   4                                              nSubMode = SMODE_CLOCK;
+ 465   4                                      break;
+ 466   4                              default:
+ 467   4                                      break;
+ 468   4                              }
+ 469   3                      }
+ 470   2      
+ 471   2                      if (bMaster && nCurrentTime.Second == 0 && nMode == MODE_CLOCK)
+ 472   2                      {
+ 473   3                              //Send out message
+ 474   3                              KEY_SYNC = 0;
+ 475   3                              bSync = 1;
+ 476   3                      }
+ 477   2              }
+ 478   1      
+ 479   1              // Display
+ 480   1              if (nLED == 0)
+ 481   1                      PreDisplay ();
+ 482   1      
+ 483   1              switch (nLED)
+ 484   1              {
+ 485   2              case 0:
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 9   
+
+ 486   2                      P34 = 1;
+ 487   2                      if (bShow0)
+ 488   2                      {
+ 489   3                              P2 = nData0;
+ 490   3                              P37 = 0; //Lighton LED
+ 491   3                      }
+ 492   2                      nLED ++;
+ 493   2                      break;
+ 494   2              case 1:
+ 495   2                      P37 = 1;
+ 496   2                      if (bShow1)
+ 497   2                      {
+ 498   3                              P2 = nData1;
+ 499   3                              P36 = 0;
+ 500   3                      }
+ 501   2                      nLED ++;
+ 502   2                      break;
+ 503   2              case 2:
+ 504   2                      P36 = 1;
+ 505   2                      if (bShow2)
+ 506   2                      {
+ 507   3                              P2 = nData2;
+ 508   3                              P35 = 0;
+ 509   3                      }
+ 510   2                      nLED ++;
+ 511   2                      break;
+ 512   2              case 3:
+ 513   2                      P35 = 1;
+ 514   2                      if (bShow3)
+ 515   2                      {
+ 516   3                              P2 = nData3;
+ 517   3                              P34 = 0;
+ 518   3                      }
+ 519   2                      nLED = 0;
+ 520   2                      break;
+ 521   2              }
+ 522   1      }
+ 523          
+ 524          
+ 525          void Delay10ms()
+ 526          {
+ 527   1              unsigned char n10MsSave, nMsSave;
+ 528   1      
+ 529   1              n10MsSave = n10Ms;
+ 530   1              nMsSave = nMs;
+ 531   1              while (n10Ms == n10MsSave);
+ 532   1              n10MsSave = n10Ms;
+ 533   1              while (nMsSave != nMs && n10Ms == n10MsSave);
+ 534   1      }
+ 535          
+ 536          void HourInc ()
+ 537          {
+ 538   1              unsigned char nHour;
+ 539   1      
+ 540   1              nHour = nCurrentTime.Hour;
+ 541   1      
+ 542   1              if (nHour & 0x80) // 12 Hour mode
+ 543   1              {
+ 544   2                      if ((nHour & 0xA0) == 0xA0)     //PM
+ 545   2                      {
+ 546   3                              nHour = GETBCD (nHour & 0x1F);
+ 547   3                              if (nHour != 12) //12 PM means 12 aclock
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 10  
+
+ 548   3                                      nHour += 12;
+ 549   3                      }
+ 550   2                      else                                       //AM
+ 551   2                      {
+ 552   3                              nHour = GETBCD (nHour & 0x1F);
+ 553   3                              if (nHour == 12)                        //12 AM means 0 aclock
+ 554   3                                      nHour = 0;
+ 555   3                      }
+ 556   2      
+ 557   2                      if (++nHour > 23)
+ 558   2                              nCurrentTime.Hour = 0x92;               //12AM
+ 559   2                      else if (nHour >= 12)                           //PM
+ 560   2                      {
+ 561   3                              nHour -= 12;
+ 562   3                              if (nHour == 0)
+ 563   3                                      nCurrentTime.Hour = 0xB2;       //12 PM
+ 564   3                              else
+ 565   3                                      nCurrentTime.Hour = 0xA0 | MAKEBCD (nHour);
+ 566   3                      }
+ 567   2                      else
+ 568   2                              nCurrentTime.Hour = 0x80 | MAKEBCD (nHour);
+ 569   2              }
+ 570   1              else
+ 571   1              {
+ 572   2                      nHour = GETBCD (nHour);
+ 573   2                      if (++nHour > 23)
+ 574   2                              nHour = 0;
+ 575   2                      nCurrentTime.Hour = MAKEBCD (nHour);
+ 576   2              }
+ 577   1      }
+ 578          
+ 579          void HourDec ()
+ 580          {
+ 581   1              unsigned char nHour;
+ 582   1      
+ 583   1              nHour = nCurrentTime.Hour;
+ 584   1      
+ 585   1              if (nHour & 0x80) // 12 Hour mode
+ 586   1              {
+ 587   2                      if ((nHour & 0xA0) == 0xA0)     //PM
+ 588   2                      {
+ 589   3                              nHour = GETBCD (nHour & 0x1F);
+ 590   3                              if (nHour != 12) //12 PM means 12 aclock
+ 591   3                                      nHour += 12;
+ 592   3                      }
+ 593   2                      else                                       //AM
+ 594   2                      {
+ 595   3                              nHour = GETBCD (nHour & 0x1F);
+ 596   3                              if (nHour == 12)                        //12 AM means 0 aclock
+ 597   3                                      nHour = 0;
+ 598   3                      }
+ 599   2      
+ 600   2                      if (nHour > 0)
+ 601   2                              nHour --;
+ 602   2                      else
+ 603   2                              nHour = 23;
+ 604   2      
+ 605   2                      if (nHour == 0)
+ 606   2                              nCurrentTime.Hour = 0x92;               //12AM
+ 607   2                      else if (nHour >= 12)                           //PM
+ 608   2                      {
+ 609   3                              nHour -= 12;
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 11  
+
+ 610   3                              if (nHour == 0)
+ 611   3                                      nCurrentTime.Hour = 0xB2;       //12 PM
+ 612   3                              else
+ 613   3                                      nCurrentTime.Hour = 0xA0 | MAKEBCD (nHour);
+ 614   3                      }
+ 615   2                      else
+ 616   2                              nCurrentTime.Hour = 0x80 | MAKEBCD (nHour);
+ 617   2              }
+ 618   1              else
+ 619   1              {
+ 620   2                      nHour = GETBCD (nHour);
+ 621   2      
+ 622   2                      if (nHour > 0)
+ 623   2                              nHour --;
+ 624   2                      else
+ 625   2                              nHour = 23;
+ 626   2                      nCurrentTime.Hour = MAKEBCD (nHour);
+ 627   2              }
+ 628   1      }
+ 629          
+ 630          unsigned char BCDInc (unsigned char nBCD, unsigned char nBCDLimit, unsigned char nBCDLow)
+ 631          {
+ 632   1              if (nBCD >= nBCDLimit || nBCD == 0x99)
+ 633   1                      return nBCDLow;
+ 634   1      
+ 635   1              if ((nBCD & 0xF) == 9)
+ 636   1                      return (nBCD & 0xF0) + 0x10;
+ 637   1              return (nBCD + 1);
+ 638   1      }
+ 639          
+ 640          unsigned char BCDDec (unsigned char nBCD, unsigned char nBCDLimit, unsigned char nBCDLow)
+ 641          {
+ 642   1              if (nBCD <= nBCDLow || nBCD == 0)
+ 643   1                      return nBCDLimit;
+ 644   1      
+ 645   1              if ((nBCD & 0xF) == 0)
+ 646   1                      return nBCD - 0x7; //0x10 + 0x9
+ 647   1              return (nBCD - 1);
+ 648   1      }
+ 649          
+ 650          unsigned char BCDHour24 (unsigned char nBCD)
+ 651          {
+ 652   1              if ((nBCD & 0xA0) == 0xA0)      //PM
+ 653   1              {
+ 654   2                      nBCD &= 0x1F;
+ 655   2                      nBCD = GETBCD (nBCD);
+ 656   2                      if (nBCD != 12) //12 PM means 12 aclock
+ 657   2                              nBCD += 12;
+ 658   2                      return (MAKEBCD (nBCD));
+ 659   2              }
+ 660   1              else                                            //AM
+ 661   1              {
+ 662   2                      nBCD &= 0x1F;
+ 663   2                      if (nBCD == 0x12)               //12 AM means 0 aclock
+ 664   2                              return (0);
+ 665   2                      return (nBCD);
+ 666   2              }
+ 667   1      }
+ 668          
+ 669          unsigned char BCDHour12 (unsigned char nBCD)
+ 670          {
+ 671   1              if (nBCD >= 0x12)                       //PM
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 12  
+
+ 672   1              {
+ 673   2                      nBCD = GETBCD (nBCD) - 12;
+ 674   2                      if (nBCD == 0)
+ 675   2                              return (0xB2);          //12 PM
+ 676   2                      else
+ 677   2                              return (0xA0 | MAKEBCD (nBCD));
+ 678   2              }
+ 679   1              else if (nBCD == 0)
+ 680   1                      return (0x92);                  // 12 AM
+ 681   1              else
+ 682   1                      return (0x80 | nBCD);
+ 683   1      }
+ 684          
+ 685          void AdjustTime (bit bIncrease)
+ 686          {
+ 687   1              bBlockClock = 1;
+ 688   1      
+ 689   1              switch (nMode)
+ 690   1              {
+ 691   2              case MODE_HOUR:
+ 692   2                      if (bIncrease)
+ 693   2                              HourInc ();
+ 694   2                      else
+ 695   2                              HourDec ();
+ 696   2                      break;
+ 697   2              case MODE_MINUTE:
+ 698   2                      if (bIncrease)
+ 699   2                              nCurrentTime.Minute = BCDInc (nCurrentTime.Minute, 0x59, 0);
+ 700   2                      else
+ 701   2                              nCurrentTime.Minute = BCDDec (nCurrentTime.Minute, 0x59, 0);
+ 702   2                      nCurrentTime.Second = 0;
+ 703   2                      break;
+ 704   2              case MODE_MONTH:
+ 705   2                      if (bIncrease)
+ 706   2                              nCurrentTime.Month = BCDInc (nCurrentTime.Month, 0x12, 1);
+ 707   2                      else
+ 708   2                              nCurrentTime.Month = BCDDec (nCurrentTime.Month, 0x12, 1);
+ 709   2                      break;
+ 710   2              case MODE_DAY:
+ 711   2                      if (bIncrease)
+ 712   2                              nCurrentTime.Day = BCDInc (nCurrentTime.Day, tblMonthDays[nCurrentTime.Month] + (nCurrentTime.Month == 
+             -2 && (GETBCD(nCurrentTime.Year) % 4) == 0), 1);
+ 713   2                      else
+ 714   2                              nCurrentTime.Day = BCDDec (nCurrentTime.Day, tblMonthDays[nCurrentTime.Month] + (nCurrentTime.Month == 
+             -2 && (GETBCD(nCurrentTime.Year) % 4) == 0), 1);
+ 715   2                      break;
+ 716   2              case MODE_WEEK:
+ 717   2                      if (bIncrease)
+ 718   2                              nCurrentTime.Week = BCDInc (nCurrentTime.Week, 7, 1);
+ 719   2                      else
+ 720   2                              nCurrentTime.Week = BCDDec (nCurrentTime.Week, 7, 1);
+ 721   2                      break;
+ 722   2              case MODE_YEAR:
+ 723   2                      if (bIncrease)
+ 724   2                              nCurrentTime.Year = BCDInc (nCurrentTime.Year, 0x99, 0);
+ 725   2                      else
+ 726   2                              nCurrentTime.Year = BCDDec (nCurrentTime.Year, 0x99, 0);
+ 727   2                      break;
+ 728   2              case MODE_HOUR24:
+ 729   2                      if (nCurrentTime.Hour & 0x80)   // 12 HOUR
+ 730   2                              nCurrentTime.Hour = BCDHour24 (nCurrentTime.Hour);
+ 731   2                      else
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 13  
+
+ 732   2                              nCurrentTime.Hour = BCDHour12 (nCurrentTime.Hour);
+ 733   2                      break;
+ 734   2              case MODE_BEEP:
+ 735   2                      bBeep = !bBeep;
+ 736   2                      DS1302WriteMyData ((bMaster ? 0x2 : 0) | (bBeep));
+ 737   2                      bBlockClock = 0;
+ 738   2                      return;
+ 739   2              case MODE_MASTER:
+ 740   2                      bMaster = !bMaster;
+ 741   2                      DS1302WriteMyData ((bMaster ? 0x2 : 0) | (bBeep));
+ 742   2                      bBlockClock = 0;
+ 743   2                      return;
+ 744   2              default:
+ 745   2                      bBlockClock = 0;
+ 746   2                      return;
+ 747   2              }
+ 748   1      
+ 749   1              DS1302WriteTime (&nCurrentTime);//Write Time
+ 750   1              n100Ms = 0;
+ 751   1              n10Ms = 0;
+ 752   1              nMs = 0;
+ 753   1              bBlockClock = 0;
+ 754   1      }
+ 755          
+ 756          void SyncTime (void)
+ 757          {
+ 758   1              bBlockClock = 1;
+ 759   1              //DS1302ReadTime (&nCurrentTime);       //Read Time
+ 760   1              if (nCurrentTime.Second == 0 && n100Ms < 1)
+ 761   1              {
+ 762   2                      bBlockClock =0;
+ 763   2                      return;
+ 764   2              }
+ 765   1      
+ 766   1              if (nCurrentTime.Second < 0x30)
+ 767   1                      nCurrentTime.Second = 0;
+ 768   1              else if (nCurrentTime.Minute < 0x59)
+ 769   1              {
+ 770   2                      nCurrentTime.Second = 0;
+ 771   2                      nCurrentTime.Minute = BCDInc (nCurrentTime.Minute, 0x60, 0);
+ 772   2              }
+ 773   1              else
+ 774   1              {
+ 775   2                      bBlockClock =0;
+ 776   2                      return; //Ignore, wait for next minutes, as increase one minutes may increase hours/day/year...
+ 777   2              }
+ 778   1      
+ 779   1              DS1302WriteTime (&nCurrentTime);//Write Time
+ 780   1              n100Ms = 0;
+ 781   1              n10Ms = 0;
+ 782   1              nMs = 0;
+ 783   1              bBlockClock = 0;
+ 784   1      }
+ 785          
+ 786          void InitTimer ()
+ 787          {
+ 788   1              unsigned char nMyData;
+ 789   1      
+ 790   1              bBlockClock = 0;
+ 791   1      
+ 792   1              bDot = 0;
+ 793   1              n100Ms = 0;
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 14  
+
+ 794   1              n10Ms = 0;
+ 795   1              nMs = 0;
+ 796   1              nLED = 0;
+ 797   1      
+ 798   1              nMyData = DS1302ReadMyData ();
+ 799   1              bBeep = nMyData & 0x1;
+ 800   1              bMaster = nMyData & 0x2;
+ 801   1      
+ 802   1              ClockInit ();
+ 803   1      
+ 804   1              AUXR |= 0x80;           // 1T mode
+ 805   1              TL0 = 0xCD;
+ 806   1              TH0 = 0xD4;                     // 1ms
+ 807   1              TMOD = 1;                       // Timer Mode
+ 808   1              TCON = 0x10;            // Timer
+ 809   1              IE = 0x82;                      // INT
+ 810   1      }
+ 811          
+ 812          void main()
+ 813          {
+ 814   1              unsigned char nPressedSec, nPressedMs, nDiffMs, nLimitMs;
+ 815   1              bit bIncrease;
+ 816   1      
+ 817   1              nTemp = ReadTemperature (&nTempL);
+ 818   1              InitTimer ();
+ 819   1      
+ 820   1              BEEP = 1;
+ 821   1              nMode = 0;
+ 822   1              bPressedS1 = 0;
+ 823   1              bPressedS2 = 0;
+ 824   1              bIncrease = 1;
+ 825   1      
+ 826   1      
+ 827   1              while (1)
+ 828   1              {
+ 829   2                      if (!KEY_S1)
+ 830   2                      {
+ 831   3                              Delay10ms ();
+ 832   3                              if (!KEY_S1)
+ 833   3                              {
+ 834   4                                      if (nMode == MODE_CLOCK)
+ 835   4                                      {
+ 836   5                                              while (!KEY_S1)
+ 837   5                                                      nSubModeTime = SMODE_COUNTSEC;
+ 838   5                                              if (++nSubMode > SMODE_MAX)
+ 839   5                                                      nSubMode = 0;
+ 840   5                                              if (nSubMode == SMODE_COUNTDOWN1)
+ 841   5                                              {
+ 842   6                                                      nCountDownMin = 1;
+ 843   6                                                      nCountDownSec = 0;
+ 844   6                                                      nCountDownBeep = 3;
+ 845   6                                              }
+ 846   5                                              bSound = 1;
+ 847   5                                              nSubModeTime = SMODE_COUNTSEC;
+ 848   5                                      }
+ 849   4                                      else
+ 850   4                                      {
+ 851   5                                              nLimitMs = 20;  //1.5sec
+ 852   5                                              nPressedSec = nCurrentTime.Second;
+ 853   5                                              nPressedMs = n100Ms;
+ 854   5                                              bPressedS1 = 0;
+ 855   5                                              while (!KEY_S1)
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 15  
+
+ 856   5                                              {                               
+ 857   6                                                      if (!KEY_OK)    // Press OK & S1
+ 858   6                                                      {
+ 859   7                                                              while (!KEY_OK || !KEY_S1);     //Until all released
+ 860   7                                                              bIncrease = !bIncrease;
+ 861   7                                                              break;
+ 862   7                                                      }
+ 863   6      
+ 864   6                                                      nDiffMs = (((nCurrentTime.Second < nPressedSec) ? 60 : 0) + nCurrentTime.Second - nPressedSec) * 10 
+             -+ ((nCurrentTime.Second == nPressedSec && n100Ms < nPressedMs) ? 10 : 0) + n100Ms - nPressedMs;
+ 865   6                                                      //nDiffMs = 0.1sec
+ 866   6              
+ 867   6                                                      if (nDiffMs > nLimitMs)
+ 868   6                                                      {
+ 869   7                                                              AdjustTime (bIncrease);
+ 870   7                                                              bPressedS1 = 1;
+ 871   7                                                              nPressedSec = nCurrentTime.Second;
+ 872   7                                                              nPressedMs = n100Ms;
+ 873   7                                                              nLimitMs = 5;  //0.3 sec
+ 874   7                                                              bSound = 1;
+ 875   7                                                      }
+ 876   6                                              }
+ 877   5                                              if (!bPressedS1) //Single Click
+ 878   5                                              {
+ 879   6                                                      AdjustTime (bIncrease);
+ 880   6                                                      bSound = 1;
+ 881   6                                              }
+ 882   5                                              else
+ 883   5                                                      bPressedS1 = 0;
+ 884   5                                      }
+ 885   4                              }
+ 886   3                      }
+ 887   2                      if (!KEY_OK)
+ 888   2                      {
+ 889   3                              Delay10ms ();
+ 890   3                              if (!KEY_OK)
+ 891   3                              {
+ 892   4                                      if (nMode != MODE_CLOCK)
+ 893   4                                      {
+ 894   5                                              while (!KEY_OK);
+ 895   5                                              // Press S2
+ 896   5                                              if (++nMode > MODE_MAX)
+ 897   5                                              {
+ 898   6                                                      nMode = 0;
+ 899   6                                                      nSubMode = 0;
+ 900   6                                              }
+ 901   5                                              bIncrease = 1;  //Reset to Increasing
+ 902   5                                              bSound = 1;
+ 903   5                                      }
+ 904   4                                      else
+ 905   4                                      {
+ 906   5                                              while (!KEY_OK)
+ 907   5                                              {
+ 908   6                                                      if (!KEY_S1) // Press S1 & OK
+ 909   6                                                      {
+ 910   7                                                              while (!KEY_OK || !KEY_S1);
+ 911   7                                                              nMode = 1;
+ 912   7                                                              bIncrease = 1;  //Reset to Increasing
+ 913   7                                                              bSound = 1;
+ 914   7                                                              break;
+ 915   7                                                      }
+ 916   6                                              }
+C51 COMPILER V7.10   MAIN                                                                  05/27/2016 21:45:04 PAGE 16  
+
+ 917   5                                              //if (!bMaster && nMode == MODE_CLOCK)
+ 918   5                                              if (nMode == MODE_CLOCK)
+ 919   5                                              {
+ 920   6                                                      //Sync
+ 921   6                                                      SyncTime ();
+ 922   6                                              }
+ 923   5                                      }
+ 924   4                              }
+ 925   3                      }
+ 926   2              }
+ 927   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2780    ----
+   CONSTANT SIZE    =     51    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     25    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =     12       2
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

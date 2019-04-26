@@ -1,0 +1,204 @@
+BL51 BANKED LINKER/LOCATER V5.03                                                        05/27/2016  21:45:04  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V5.03, INVOKED BY:
+C:\KEIL\C51\BIN\BL51.EXE \\tsclient\S\MC51\Output\Main.obj, \\tsclient\S\MC51\Output\DS1302.obj, \\tsclient\S\MC51\Outpu
+>> t\NTC.obj TO \\tsclient\S\MC51\Output\LyxClock PRINT (.\LyxClock.m51)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  \\tsclient\S\MC51\Output\Main.obj (MAIN)
+  \\tsclient\S\MC51\Output\DS1302.obj (DS1302)
+  \\tsclient\S\MC51\Output\NTC.obj (NTC)
+  C:\KEIL\C51\LIB\C51S.LIB (?C_STARTUP)
+  C:\KEIL\C51\LIB\C51S.LIB (?C?CLDPTR)
+  C:\KEIL\C51\LIB\C51S.LIB (?C?CLDOPTR)
+  C:\KEIL\C51\LIB\C51S.LIB (?C?CSTPTR)
+  C:\KEIL\C51\LIB\C51S.LIB (?C?CSTOPTR)
+  C:\KEIL\C51\LIB\C51S.LIB (?C?IMUL)
+  C:\KEIL\C51\LIB\C51S.LIB (?C?UIDIV)
+  C:\KEIL\C51\LIB\C51S.LIB (?C_INIT)
+
+
+LINK MAP OF MODULE:  \\tsclient\S\MC51\Output\LyxClock (MAIN)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     000AH     UNIT         _DATA_GROUP_
+                    0012H     000EH                  *** GAP ***
+            BIT     0020H.0   0001H.4   UNIT         ?BI?MAIN
+            BIT     0021H.4   0000H.2   UNIT         ?BI?NTC
+            BIT     0021H.6   0000H.2   UNIT         _BIT_GROUP_
+            BIT     0022H.0   0000H.1   UNIT         ?BI?DS1302
+                    0022H.1   0000H.7                *** GAP ***
+            DATA    0023H     0019H     UNIT         ?DT?MAIN
+            IDATA   003CH     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+            CODE    0003H     0006H     UNIT         ?PR?DS1302READMYDATA?DS1302
+                    0009H     0002H                  *** GAP ***
+            CODE    000BH     0003H     ABSOLUTE     
+            CODE    000EH     047FH     UNIT         ?PR?PREDISPLAY?MAIN
+            CODE    048DH     0164H     UNIT         ?PR?ADJUSTTIME?MAIN
+            CODE    05F1H     014DH     UNIT         ?PR?ONTIMER?MAIN
+            CODE    073EH     010DH     UNIT         ?PR?MAIN?MAIN
+            CODE    084BH     00E1H     UNIT         ?C?LIB_CODE
+            CODE    092CH     00B8H     UNIT         ?PR?HOURDEC?MAIN
+            CODE    09E4H     00ADH     UNIT         ?PR?HOURINC?MAIN
+            CODE    0A91H     008CH     UNIT         ?C_C51STARTUP
+            CODE    0B1DH     007AH     UNIT         ?PR?_READTEMPERATURE?NTC
+            CODE    0B97H     0079H     UNIT         ?CO?NTC
+            CODE    0C10H     0065H     UNIT         ?PR?CLOCKINIT?DS1302
+            CODE    0C75H     0051H     UNIT         ?PR?_DS1302WRITETIME?DS1302
+            CODE    0CC6H     004DH     UNIT         ?PR?_DS1302READTIME?DS1302
+BL51 BANKED LINKER/LOCATER V5.03                                                      05/27/2016  21:45:04  PAGE 2
+
+
+            CODE    0D13H     0048H     UNIT         ?PR?SYNCTIME?MAIN
+            CODE    0D5BH     003DH     UNIT         ?PR?_BCDHOUR24?MAIN
+            CODE    0D98H     003BH     UNIT         ?PR?_BCDHOUR12?MAIN
+            CODE    0DD3H     0033H     UNIT         ?CO?MAIN
+            CODE    0E06H     002FH     UNIT         ?PR?INITTIMER?MAIN
+            CODE    0E35H     002AH     UNIT         ?PR?GETADCRESULT?NTC
+            CODE    0E5FH     001DH     UNIT         ?PR?_DS1302WRITE?DS1302
+            CODE    0E7CH     001CH     UNIT         ?PR?_BCDINC?MAIN
+            CODE    0E98H     0019H     UNIT         ?PR?_BCDDEC?MAIN
+            CODE    0EB1H     0017H     UNIT         ?PR?DS1302READ?DS1302
+            CODE    0EC8H     0016H     UNIT         ?PR?DELAY10MS?MAIN
+            CODE    0EDEH     0016H     UNIT         ?PR?_DS1302WRITEBYTE?DS1302
+            CODE    0EF4H     0016H     UNIT         ?PR?_DS1302WRITEMYDATA?DS1302
+            CODE    0F0AH     0015H     UNIT         ?PR?_DS1302READBYTE?DS1302
+            CODE    0F1FH     0010H     UNIT         ?PR?INITADC?NTC
+            CODE    0F2FH     0005H     UNIT         ?C_INITSEG
+
+
+
+OVERLAY MAP OF MODULE:   \\tsclient\S\MC51\Output\LyxClock (MAIN)
+
+
+SEGMENT                                  BIT_GROUP          DATA_GROUP 
+  +--> CALLED SEGMENT                 START    LENGTH     START    LENGTH
+-------------------------------------------------------------------------
+?PR?ONTIMER?MAIN                      -----    -----      -----    -----
+  +--> ?PR?_DS1302READTIME?DS1302
+  +--> ?PR?_READTEMPERATURE?NTC
+  +--> ?PR?PREDISPLAY?MAIN
+
+?PR?_DS1302READTIME?DS1302            -----    -----      0008H    0003H
+  +--> ?PR?_DS1302WRITE?DS1302
+
+?PR?_READTEMPERATURE?NTC              -----    -----      000DH    0005H
+  +--> ?PR?GETADCRESULT?NTC
+  +--> ?CO?NTC
+
+?PR?GETADCRESULT?NTC                  -----    -----      -----    -----
+  +--> ?PR?INITADC?NTC
+
+?PR?PREDISPLAY?MAIN                   -----    -----      -----    -----
+  +--> ?CO?MAIN
+
+*** NEW ROOT ***************************************************
+
+?C_C51STARTUP                         -----    -----      -----    -----
+  +--> ?PR?MAIN?MAIN
+  +--> ?C_INITSEG
+
+?PR?MAIN?MAIN                         0021H.6  0000H.1    -----    -----
+  +--> ?PR?_READTEMPERATURE?NTC
+  +--> ?PR?INITTIMER?MAIN
+  +--> ?PR?DELAY10MS?MAIN
+  +--> ?PR?ADJUSTTIME?MAIN
+  +--> ?PR?SYNCTIME?MAIN
+
+?PR?INITTIMER?MAIN                    -----    -----      -----    -----
+BL51 BANKED LINKER/LOCATER V5.03                                                      05/27/2016  21:45:04  PAGE 3
+
+
+  +--> ?PR?DS1302READMYDATA?DS1302
+  +--> ?PR?CLOCKINIT?DS1302
+
+?PR?DS1302READMYDATA?DS1302           -----    -----      -----    -----
+  +--> ?PR?_DS1302READBYTE?DS1302
+
+?PR?_DS1302READBYTE?DS1302            -----    -----      -----    -----
+  +--> ?PR?_DS1302WRITE?DS1302
+  +--> ?PR?DS1302READ?DS1302
+
+?PR?CLOCKINIT?DS1302                  -----    -----      -----    -----
+  +--> ?PR?_DS1302READBYTE?DS1302
+  +--> ?PR?_DS1302WRITEBYTE?DS1302
+
+?PR?_DS1302WRITEBYTE?DS1302           -----    -----      -----    -----
+  +--> ?PR?_DS1302WRITE?DS1302
+
+?PR?ADJUSTTIME?MAIN                   0021H.7  0000H.1    -----    -----
+  +--> ?PR?HOURINC?MAIN
+  +--> ?PR?HOURDEC?MAIN
+  +--> ?PR?_BCDINC?MAIN
+  +--> ?PR?_BCDDEC?MAIN
+  +--> ?CO?MAIN
+  +--> ?PR?_BCDHOUR24?MAIN
+  +--> ?PR?_BCDHOUR12?MAIN
+  +--> ?PR?_DS1302WRITEMYDATA?DS1302
+  +--> ?PR?_DS1302WRITETIME?DS1302
+
+?PR?_DS1302WRITEMYDATA?DS1302         -----    -----      -----    -----
+  +--> ?PR?_DS1302WRITEBYTE?DS1302
+
+?PR?_DS1302WRITETIME?DS1302           -----    -----      000DH    0003H
+  +--> ?PR?_DS1302WRITEBYTE?DS1302
+  +--> ?PR?_DS1302WRITE?DS1302
+
+?PR?SYNCTIME?MAIN                     -----    -----      -----    -----
+  +--> ?PR?_BCDINC?MAIN
+  +--> ?PR?_DS1302WRITETIME?DS1302
+
+
+
+SYMBOL TABLE OF MODULE:  \\tsclient\S\MC51\Output\LyxClock (MAIN)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+
+  -------         MODULE        ?C?CLDPTR
+  C:084BH         PUBLIC        ?C?CLDPTR
+  -------         ENDMOD        ?C?CLDPTR
+
+  -------         MODULE        ?C?CLDOPTR
+  C:0864H         PUBLIC        ?C?CLDOPTR
+  -------         ENDMOD        ?C?CLDOPTR
+
+  -------         MODULE        ?C?CSTPTR
+  C:0891H         PUBLIC        ?C?CSTPTR
+  -------         ENDMOD        ?C?CSTPTR
+BL51 BANKED LINKER/LOCATER V5.03                                                      05/27/2016  21:45:04  PAGE 4
+
+
+
+  -------         MODULE        ?C?CSTOPTR
+  C:08A3H         PUBLIC        ?C?CSTOPTR
+  -------         ENDMOD        ?C?CSTOPTR
+
+  -------         MODULE        ?C?IMUL
+  C:08C5H         PUBLIC        ?C?IMUL
+  -------         ENDMOD        ?C?IMUL
+
+  -------         MODULE        ?C?UIDIV
+  C:08D7H         PUBLIC        ?C?UIDIV
+  -------         ENDMOD        ?C?UIDIV
+
+*** WARNING L15: MULTIPLE CALL TO SEGMENT
+    SEGMENT: ?PR?_READTEMPERATURE?NTC
+    CALLER1: ?PR?ONTIMER?MAIN
+    CALLER2: ?C_C51STARTUP
+
+Program Size: data=46.1 xdata=0 code=3890
+LINK/LOCATE RUN COMPLETE.  1 WARNING(S),  0 ERROR(S)
