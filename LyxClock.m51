@@ -1,0 +1,209 @@
+BL51 BANKED LINKER/LOCATER V5.03                                                        01/07/2017  22:49:10  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V5.03, INVOKED BY:
+C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\BIN\BL51.EXE ..\Output\Main.obj, ..\Output\DS1302.obj, ..\Output\NTC.obj TO ..\Outp
+>> ut\LyxClock PRINT (.\LyxClock.m51) RAMSIZE (256)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  ..\Output\Main.obj (MAIN)
+  ..\Output\DS1302.obj (DS1302)
+  ..\Output\NTC.obj (NTC)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C_STARTUP)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C?CLDPTR)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C?CLDOPTR)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C?CSTPTR)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C?CSTOPTR)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C?IMUL)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C?UIDIV)
+  C:\USERS\LYXSO\SYSTEM\TOOLS\KEIL\C51\LIB\C51S.LIB (?C_INIT)
+
+
+LINK MAP OF MODULE:  ..\Output\LyxClock (MAIN)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     000AH     UNIT         _DATA_GROUP_
+                    0012H     000EH                  *** GAP ***
+            BIT     0020H.0   0001H.2   UNIT         ?BI?MAIN
+            BIT     0021H.2   0000H.3   UNIT         _BIT_GROUP_
+            BIT     0021H.5   0000H.2   UNIT         ?BI?NTC
+            BIT     0021H.7   0000H.1   UNIT         ?BI?DS1302
+            DATA    0022H     001DH     UNIT         ?DT?MAIN
+            IDATA   003FH     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+            CODE    0003H     0008H     UNIT         ?C_INITSEG
+            CODE    000BH     0003H     ABSOLUTE     
+            CODE    000EH     0315H     INBLOCK      ?PR?PREDISPLAY?MAIN
+            CODE    0323H     0198H     INBLOCK      ?PR?ADJUSTTIME?MAIN
+            CODE    04BBH     018AH     INBLOCK      ?PR?ONTIMER?MAIN
+            CODE    0645H     00EAH     INBLOCK      ?PR?MAIN?MAIN
+            CODE    072FH     00E1H     UNIT         ?C?LIB_CODE
+            CODE    0810H     00B7H     INBLOCK      ?PR?HOURDEC?MAIN
+            CODE    08C7H     00ADH     INBLOCK      ?PR?HOURINC?MAIN
+            CODE    0974H     00A0H     INBLOCK      ?PR?_DISPLAYDECNUM?MAIN
+            CODE    0A14H     009BH     UNIT         ?CO?MAIN
+            CODE    0AAFH     008CH     UNIT         ?C_C51STARTUP
+            CODE    0B3BH     007AH     INBLOCK      ?PR?_READTEMPERATURE?NTC
+            CODE    0BB5H     0079H     UNIT         ?CO?NTC
+            CODE    0C2EH     0071H     INBLOCK      ?PR?CLOCKINIT?DS1302
+            CODE    0C9FH     0063H     INBLOCK      ?PR?INITTIMER?MAIN
+            CODE    0D02H     0061H     INBLOCK      ?PR?_DISPLAYCHAR?MAIN
+BL51 BANKED LINKER/LOCATER V5.03                                                      01/07/2017  22:49:10  PAGE 2
+
+
+            CODE    0D63H     0040H     INBLOCK      ?PR?_BCDHOUR12?MAIN
+            CODE    0DA3H     003FH     INBLOCK      ?PR?_BCDHOUR24?MAIN
+            CODE    0DE2H     003EH     INBLOCK      ?PR?_DS1302WRITETIME?DS1302
+            CODE    0E20H     003AH     INBLOCK      ?PR?_DS1302READTIME?DS1302
+            CODE    0E5AH     002AH     INBLOCK      ?PR?GETADCRESULT?NTC
+            CODE    0E84H     0024H     INBLOCK      ?PR?_CHARINDEX?MAIN
+            CODE    0EA8H     001EH     INBLOCK      ?PR?_DS1302WRITEMYDATA?DS1302
+            CODE    0EC6H     001DH     INBLOCK      ?PR?_DS1302WRITE?DS1302
+            CODE    0EE3H     001CH     INBLOCK      ?PR?_BCDINC?MAIN
+            CODE    0EFFH     0019H     INBLOCK      ?PR?_BCDDEC?MAIN
+            CODE    0F18H     0017H     INBLOCK      ?PR?DS1302READ?DS1302
+            CODE    0F2FH     0016H     INBLOCK      ?PR?DELAY10MS?MAIN
+            CODE    0F45H     0015H     INBLOCK      ?PR?_DS1302READBYTE?DS1302
+            CODE    0F5AH     0014H     INBLOCK      ?PR?_DS1302WRITEBYTE?DS1302
+            CODE    0F6EH     0010H     INBLOCK      ?PR?INITADC?NTC
+            CODE    0F7EH     000DH     INBLOCK      ?PR?DISPLAYERR?MAIN
+
+
+
+OVERLAY MAP OF MODULE:   ..\Output\LyxClock (MAIN)
+
+
+SEGMENT                                  BIT_GROUP          DATA_GROUP 
+  +--> CALLED SEGMENT                 START    LENGTH     START    LENGTH
+-------------------------------------------------------------------------
+?PR?ONTIMER?MAIN                      -----    -----      -----    -----
+  +--> ?PR?_DS1302READTIME?DS1302
+  +--> ?PR?_READTEMPERATURE?NTC
+  +--> ?PR?_BCDHOUR24?MAIN
+  +--> ?PR?PREDISPLAY?MAIN
+
+?PR?_DS1302READTIME?DS1302            -----    -----      0008H    0003H
+  +--> ?PR?_DS1302WRITE?DS1302
+  +--> ?PR?DS1302READ?DS1302
+
+?PR?_READTEMPERATURE?NTC              -----    -----      000DH    0005H
+  +--> ?PR?GETADCRESULT?NTC
+  +--> ?CO?NTC
+
+?PR?GETADCRESULT?NTC                  -----    -----      -----    -----
+  +--> ?PR?INITADC?NTC
+
+?PR?PREDISPLAY?MAIN                   -----    -----      0008H    0001H
+  +--> ?PR?_DISPLAYCHAR?MAIN
+  +--> ?PR?DISPLAYERR?MAIN
+  +--> ?PR?_DISPLAYDECNUM?MAIN
+  +--> ?CO?MAIN
+  +--> ?PR?_BCDHOUR24?MAIN
+
+?PR?_DISPLAYCHAR?MAIN                 -----    -----      0009H    0004H
+  +--> ?PR?_CHARINDEX?MAIN
+  +--> ?CO?MAIN
+
+?PR?_DISPLAYDECNUM?MAIN               -----    -----      -----    -----
+  +--> ?CO?MAIN
+
+*** NEW ROOT ***************************************************
+BL51 BANKED LINKER/LOCATER V5.03                                                      01/07/2017  22:49:10  PAGE 3
+
+
+
+?C_C51STARTUP                         -----    -----      -----    -----
+  +--> ?PR?MAIN?MAIN
+  +--> ?C_INITSEG
+
+?PR?MAIN?MAIN                         0021H.2  0000H.1    -----    -----
+  +--> ?PR?_READTEMPERATURE?NTC
+  +--> ?PR?INITTIMER?MAIN
+  +--> ?PR?DELAY10MS?MAIN
+  +--> ?PR?ADJUSTTIME?MAIN
+
+?PR?INITTIMER?MAIN                    -----    -----      -----    -----
+  +--> ?PR?CLOCKINIT?DS1302
+  +--> ?PR?_DS1302READBYTE?DS1302
+
+?PR?CLOCKINIT?DS1302                  -----    -----      -----    -----
+  +--> ?PR?_DS1302READBYTE?DS1302
+  +--> ?PR?_DS1302WRITEBYTE?DS1302
+
+?PR?_DS1302READBYTE?DS1302            -----    -----      -----    -----
+  +--> ?PR?_DS1302WRITE?DS1302
+  +--> ?PR?DS1302READ?DS1302
+
+?PR?_DS1302WRITEBYTE?DS1302           -----    -----      -----    -----
+  +--> ?PR?_DS1302WRITE?DS1302
+
+?PR?ADJUSTTIME?MAIN                   0021H.3  0000H.2    -----    -----
+  +--> ?PR?HOURINC?MAIN
+  +--> ?PR?HOURDEC?MAIN
+  +--> ?PR?_BCDINC?MAIN
+  +--> ?PR?_BCDDEC?MAIN
+  +--> ?CO?MAIN
+  +--> ?PR?_BCDHOUR24?MAIN
+  +--> ?PR?_BCDHOUR12?MAIN
+  +--> ?PR?_DS1302WRITEMYDATA?DS1302
+  +--> ?PR?_DS1302WRITETIME?DS1302
+
+?PR?_DS1302WRITEMYDATA?DS1302         -----    -----      -----    -----
+  +--> ?PR?_DS1302WRITEBYTE?DS1302
+
+?PR?_DS1302WRITETIME?DS1302           -----    -----      000DH    0003H
+  +--> ?PR?_DS1302WRITEBYTE?DS1302
+  +--> ?PR?_DS1302WRITE?DS1302
+
+
+
+SYMBOL TABLE OF MODULE:  ..\Output\LyxClock (MAIN)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+
+  -------         MODULE        ?C?CLDPTR
+  C:072FH         PUBLIC        ?C?CLDPTR
+  -------         ENDMOD        ?C?CLDPTR
+
+  -------         MODULE        ?C?CLDOPTR
+  C:0748H         PUBLIC        ?C?CLDOPTR
+BL51 BANKED LINKER/LOCATER V5.03                                                      01/07/2017  22:49:10  PAGE 4
+
+
+  -------         ENDMOD        ?C?CLDOPTR
+
+  -------         MODULE        ?C?CSTPTR
+  C:0775H         PUBLIC        ?C?CSTPTR
+  -------         ENDMOD        ?C?CSTPTR
+
+  -------         MODULE        ?C?CSTOPTR
+  C:0787H         PUBLIC        ?C?CSTOPTR
+  -------         ENDMOD        ?C?CSTOPTR
+
+  -------         MODULE        ?C?IMUL
+  C:07A9H         PUBLIC        ?C?IMUL
+  -------         ENDMOD        ?C?IMUL
+
+  -------         MODULE        ?C?UIDIV
+  C:07BBH         PUBLIC        ?C?UIDIV
+  -------         ENDMOD        ?C?UIDIV
+
+*** WARNING L15: MULTIPLE CALL TO SEGMENT
+    SEGMENT: ?PR?_READTEMPERATURE?NTC
+    CALLER1: ?PR?ONTIMER?MAIN
+    CALLER2: ?C_C51STARTUP
+
+Program Size: data=50.0 xdata=0 code=3979
+LINK/LOCATE RUN COMPLETE.  1 WARNING(S),  0 ERROR(S)
